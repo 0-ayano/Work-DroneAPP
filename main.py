@@ -28,7 +28,20 @@ def test():
             pygameImage  = imageControl.convertImg(frame)
 
         elif mode == 1:
+            # 任意色の追尾
+            rgb = pygameControl.getColor(frame)
+            info = imageControl.findColor(frame, rgb)
+            pygameImage  = imageControl.convertImg(frame)
+            drone.trackPerson(info)
+            mode = 1.1
             pass
+
+        elif mode == 1.1:
+            # 任意色の追尾
+            info = imageControl.findColor(frame, rgb)
+            pygameImage  = imageControl.convertImg(frame)
+            drone.trackPerson(info)
+
         
         # 画面の生成
         battery_text = pygameControl.setText( "Battery : " + str( drone.getBattery() ) + "%" )
@@ -38,7 +51,7 @@ def test():
         screen.blit(time_text, [10, 80])
         pygameControl.updata()
 
-        runFlag = drone.commonTello(runFlag)
+        runFlag, mode = drone.commonTello(mode)
 
     pygameControl.quit()
     sys.exit()

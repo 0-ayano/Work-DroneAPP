@@ -2,14 +2,19 @@ import os
 os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS"] = "0"
 
 from djitellopy import Tello
+import numpy as np
 import time
 import cv2
 import pygame
 
 class telloControl:
-    drone  = None
-    widht  = 0
-    height = 0
+    drone    = None
+    widht    = 0
+    height   = 0
+    pid      = [0.5, 0.5, 0]
+    pidUD    = [0.9, 0.9, 0]
+    pError   = 0
+    pErrorUD = 0
 
     """
     関数名 : __init__
@@ -89,7 +94,9 @@ class telloControl:
     返り値 : プログラムの動作フラグ
     Telloの基本操作
     """
-    def commonTello(self, runFlag=True):
+    def commonTello(self, mode):
+        runFlag = True
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:            # Xを押したらプログラム終了
                     runFlag = False
@@ -103,11 +110,18 @@ class telloControl:
                     time.sleep(1)
                     self.drone.land()    
                     time.sleep(1)
-                if event.key == pygame.K_t:         # 着陸
+                    
+                elif event.key == pygame.K_t:         # 着陸
                     time.sleep(1)
                     self.drone.takeoff()
                     time.sleep(1)
-        return runFlag
+
+                if event.key == pygame.K_1:
+                    mode = 0
+
+                elif event.key == pygame.K_2:
+                    mode = 1
+        return runFlag, mode
 
     """
     関数名 : getBattery
@@ -126,3 +140,42 @@ class telloControl:
     """
     def getTime(self):
         return self.drone.get_flight_time()
+
+    
+    def trackPerson(self, info):
+        speedFB = 0
+        if int(info[1]) > 150000:
+            speedFB = 0
+
+        elif int(info[1]) <= 150000:
+            speedFB = 30
+
+        errorUD = info[0][1] - self.height // 2
+        speedUD = self.pidUD[0] * errorUD + self.pidUD[1] * (errorUD - self.pErrorUD)
+        speedUD = int(np.clip(speedUD, -60, 60))
+
+        ## PID
+        error = info[0][0] - self.widht // 2
+        speed = self.pid[0]*error + self.pid[1]*(error-self.pError)
+        speed = int(np.clip(speed, -30, 30))
+
+        if info[1] != 0:
+            self.drone.yaw_velocity = speed
+            self.drone.for_back_velocity = speedFB
+            self.drone.up_down_velocity = -speedUD
+        else:
+            self.drone.for_back_velocity = 0
+            self.drone.left_right_velocity = 0
+            self.drone.up_down_velocity = 0
+            self.drone.yaw_velocity = 0
+            error = 0
+
+        if self.drone.send_rc_control:
+            self.drone.send_rc_control(self.drone.left_right_velocity,
+                                self.drone.for_back_velocity,
+                                self.drone.up_down_velocity,
+                                self.drone.yaw_velocity)
+
+        self.pError   = error
+        self.pErrorUD = errorUD
+        return 0

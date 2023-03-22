@@ -1,4 +1,6 @@
+from pygame.locals import *
 import pygame
+import numpy as np
 
 """
 関数名 : initPygame
@@ -54,3 +56,20 @@ def setText(msg):
     font = pygame.font.Font(None, 20)
     text = font.render(msg, True, (0, 255, 0))
     return text
+
+"""
+関数名 : getColor
+引数　 : 画像
+返り値 : 色
+任意色の取得
+"""
+def getColor(frame):
+    flag = True
+    while(flag):
+        for event in pygame.event.get():
+            if event.type == MOUSEBUTTONDOWN:
+                y, x = event.pos
+                x = x - 30
+                print("(" + str(x) + ", " + str(y) + ") -> " + str(frame[x][y]))
+                flag = False
+    return frame[x][y]

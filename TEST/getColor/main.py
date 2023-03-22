@@ -1,20 +1,33 @@
-import cv2 as cv
+import cv2
 import numpy as np
 
-#画像データの読み込み
-img = cv.imread('./test1.png')
+# 赤色の検出
+def detect_color(img, h):
+    h1 = int(h) - 10
+    h2 = int(h) + 10
 
-#BGR色空間からHSV色空間への変換
-hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+    # HSV色空間に変換
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-#色検出しきい値の設定
-lower = np.array([93, 95, 239])
-upper = np.array([255, 255, 255])
+    # 緑色のHSVの値域1
+    hsv_min = np.array([h1, 100, 100])
+    hsv_max = np.array([h2,255,255])
 
-#色検出しきい値範囲内の色を抽出するマスクを作成
-frame_mask = cv.inRange(hsv, lower, upper)
+    # 緑色領域のマスク（255：赤色、0：赤色以外）    
+    mask = cv2.inRange(hsv, hsv_min, hsv_max)
+    
+    # マスキング処理
+    masked_img = cv2.bitwise_and(img, img, mask=mask)
 
-#論理演算で色検出
-dst = cv.bitwise_and(img, img, mask=frame_mask)
+    return mask, masked_img
 
-cv.imwrite('replace.png',dst)
+
+# 入力画像の読み込み
+img = cv2.imread("./test1.png")
+
+# 色検出
+mask, masked_img = detect_color(img, 90)
+
+# 結果を出力
+cv2.imwrite("./mask.png", mask)
+cv2.imwrite("./masked_img.png", masked_img)
